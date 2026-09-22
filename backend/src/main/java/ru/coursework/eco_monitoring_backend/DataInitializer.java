@@ -3,6 +3,8 @@ package ru.coursework.eco_monitoring_backend;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+
 import ru.coursework.eco_monitoring_backend.model.Measurement;
 import ru.coursework.eco_monitoring_backend.repository.MeasurementRepository;
 
@@ -10,6 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Configuration
+@Profile("!test")
 public class DataInitializer {
 
     @Bean
