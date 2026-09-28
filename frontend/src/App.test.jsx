@@ -4,14 +4,14 @@ import App from "./App";
 
 test("renders the main heading", () => {
   render(<App />);
+  // Проверяем, что отрисовался главный заголовок
   expect(
-    screen.getByRole("heading", { name: /Get started/i }),
+    screen.getByRole("heading", { name: /Экологический мониторинг/i }),
   ).toBeInTheDocument();
 });
 
-test("renders the counter button", () => {
+test("renders the subtitle", () => {
   render(<App />);
-  expect(
-    screen.getByRole("button", { name: /Count is 0/i }),
-  ).toBeInTheDocument();
+  // Проверяем подзаголовок
+  expect(screen.getByText(/Текущие показатели/i)).toBeInTheDocument();
 });

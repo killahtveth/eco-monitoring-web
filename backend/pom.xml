@@ -28,6 +28,9 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<sonar.projectKey>eco-monitoring-web</sonar.projectKey>
+    	<sonar.organization>killahtveth</sonar.organization>
+    	<sonar.qualitygate.wait>false</sonar.qualitygate.wait>
 	</properties>
 	<dependencies>
 		<dependency>
