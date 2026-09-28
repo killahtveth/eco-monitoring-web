@@ -34,8 +34,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         
-        run: >
-          run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f backend/pom.xml
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -f backend/pom.xml
 
       - name: Run Checkstyle
         uses: dbelyaev/action-checkstyle@master
