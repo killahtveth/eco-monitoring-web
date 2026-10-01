@@ -67,6 +67,13 @@
     		<artifactId>h2</artifactId>
     		<scope>test</scope>
 		</dependency>
+		<!-- Spring Boot Test (базовая) -->
+		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-test</artifactId>
+    		<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -114,7 +121,7 @@
 			<plugin>
     			<groupId>org.jacoco</groupId>
     			<artifactId>jacoco-maven-plugin</artifactId>
-    			<version>0.8.12</version>
+    			<version>0.8.15</version>
     			<executions>
         			<execution>
             			<goals>
