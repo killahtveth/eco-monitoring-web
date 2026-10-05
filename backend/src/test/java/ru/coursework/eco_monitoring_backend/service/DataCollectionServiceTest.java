@@ -1,0 +1,112 @@
+package ru.coursework.eco_monitoring_backend.service;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.web.client.RestClient;
+import ru.coursework.eco_monitoring_backend.model.DataSource;
+import ru.coursework.eco_monitoring_backend.model.Measurement;
+import ru.coursework.eco_monitoring_backend.model.Parameter;
+import ru.coursework.eco_monitoring_backend.model.Location;
+import ru.coursework.eco_monitoring_backend.repository.DataSourceRepository;
+import ru.coursework.eco_monitoring_backend.repository.LocationRepository;
+import ru.coursework.eco_monitoring_backend.repository.MeasurementRepository;
+import ru.coursework.eco_monitoring_backend.repository.ParameterRepository;
+import ru.coursework.eco_monitoring_backend.service.collector.OpenMeteoCollector;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+
+class DataCollectionServiceTest {
+
+    private DataCollectionService service;
+    private MeasurementRepository measurements;
+    private DataSourceRepository dataSources;
+    private LocationRepository locations;
+    private ParameterRepository parameters;
+    private MockRestServiceServer server;
+    private DataSource ds;
+
+    @BeforeEach
+    void setUp() {
+        dataSources = mock(DataSourceRepository.class);
+        locations = mock(LocationRepository.class);
+        parameters = mock(ParameterRepository.class);
+        measurements = mock(MeasurementRepository.class);
+
+        RestClient.Builder builder = RestClient.builder();
+        server = MockRestServiceServer.bindTo(builder).build();
+        OpenMeteoCollector collector = new OpenMeteoCollector(builder);
+
+        service = new DataCollectionService(dataSources, locations, parameters, measurements, List.of(collector));
+
+        ds = DataSource.builder()
+            .id(1L).name("Test").type("OPEN_METEO")
+            .url("54.3,48.4").intervalMinutes(60).active(true).build();
+        when(dataSources.findByActiveTrue()).thenReturn(List.of(ds));
+        when(dataSources.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(locations.findByName("Test")).thenReturn(null);
+        when(locations.save(any())).thenAnswer(inv -> {
+            Location l = inv.getArgument(0);
+            l.setId(1L);
+            return l;
+        });
+        when(parameters.findByCode(any())).thenAnswer(inv -> {
+            String code = inv.getArgument(0);
+            return Optional.of(Parameter.builder()
+                .id(1L).code(code).unit("μg/m³").defaultThreshold(50.0).build());
+        });
+        when(measurements.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    @Test
+    void collectAll_savesAllMeasurementsFromRealApi() {
+        String json = """
+            {
+              "current_units": {"pm10":"μg/m³","pm2_5":"μg/m³","carbon_monoxide":"μg/m³",
+                                "nitrogen_dioxide":"μg/m³","sulphur_dioxide":"μg/m³","ozone":"μg/m³"},
+              "current": {"time":"2026-11-11T15:00","pm10":25.0,"pm2_5":12.0,
+                          "carbon_monoxide":180.0,"nitrogen_dioxide":15.0,
+                          "sulphur_dioxide":3.0,"ozone":45.0}
+            }
+            """;
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+            .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        int saved = service.collectAll();
+
+        assertThat(saved).isEqualTo(6);
+        verify(measurements, times(6)).save(any(Measurement.class));
+        verify(dataSources).save(argThat(d -> "ACTIVE".equals(d.getStatus())));
+    }
+
+    @Test
+    void collectAll_marksErrorWhenApiFails() {
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+            .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withServerError());
+
+        int saved = service.collectAll();
+
+        assertThat(saved).isZero();
+        verify(measurements, never()).save(any());
+        verify(dataSources).save(argThat(d -> "ERROR".equals(d.getStatus()) && d.getLastError() != null));
+    }
+
+    @Test
+    void collectAll_skipsSourceWhenIntervalNotElapsed() {
+        ds.setLastFetchAt(java.time.LocalDateTime.now());
+        ds.setIntervalMinutes(60);
+
+        int saved = service.collectAll();
+
+        assertThat(saved).isZero();
+        server.verify();
+    }
+}
