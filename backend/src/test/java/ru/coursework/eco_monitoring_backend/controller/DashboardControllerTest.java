@@ -2,6 +2,7 @@ package ru.coursework.eco_monitoring_backend.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -9,6 +10,7 @@ import ru.coursework.eco_monitoring_backend.model.Location;
 import ru.coursework.eco_monitoring_backend.model.Measurement;
 import ru.coursework.eco_monitoring_backend.model.Parameter;
 import ru.coursework.eco_monitoring_backend.repository.MeasurementRepository;
+import ru.coursework.eco_monitoring_backend.security.JwtService;   // ← импорт
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(DashboardController.class)
+@AutoConfigureMockMvc(addFilters = false)          // фильтры в запросах не применяются
 class DashboardControllerTest {
 
     @Autowired
@@ -27,13 +30,18 @@ class DashboardControllerTest {
     @MockitoBean
     private MeasurementRepository repository;
 
+    @MockitoBean
+    private JwtService jwtService;                 // ← ключевое: бин есть, фильтр создастся
+
     @Test
     void shouldReturnListOfMeasurements() throws Exception {
         Parameter p = Parameter.builder().code("PM2.5").unit("μg/m³").build();
         Location l = Location.builder().name("Test").build();
         Measurement m = Measurement.builder()
-            .id(1L).parameter(p).location(l).value(12.5).threshold(15.0)
-            .timestamp(LocalDateTime.now()).build();
+            .id(1L).parameter(p).location(l)
+            .value(12.5).threshold(15.0)
+            .timestamp(LocalDateTime.now())
+            .build();
 
         when(repository.findLatestPerParameterAndLocation()).thenReturn(List.of(m));
 
