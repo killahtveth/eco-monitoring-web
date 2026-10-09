@@ -1,62 +1,39 @@
-import { useState, useEffect } from "react";
-import "./App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import Nav from "./components/Nav";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import History from "./pages/History";
+import MapPage from "./pages/MapPage";
+import Reports from "./pages/Reports";
+import Notifications from "./pages/Notifications";
+import AdminSources from "./pages/AdminSources";
 
-function App() {
-  const [measurements, setMeasurements] = useState([]);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    // Запрос к нашему Spring Boot бэкенду
-    fetch("http://localhost:8080/api/dashboard/current")
-      .then((response) => {
-        if (!response.ok) throw new Error("Ошибка сети");
-        return response.json();
-      })
-      .then((data) => setMeasurements(data))
-      .catch((err) => setError(err.message));
-  }, []);
-
-  // Функция для определения цвета карточки
-  const getCardColor = (value, threshold) => {
-    if (value >= threshold) return "#ff4d4f"; // Красный (превышение)
-    if (value >= threshold * 0.8) return "#faad14"; // Желтый (предупреждение)
-    return "#52c41a"; // Зеленый (норма)
-  };
-
+export default function App() {
   return (
-    <div className="dashboard">
-      <h1>Экологический мониторинг</h1>
-      <p className="subtitle">Текущие показатели</p>
-
-      {error && (
-        <p style={{ color: "red" }}>Ошибка: {error}. Запущен ли бэкенд?</p>
-      )}
-
-      <div className="cards-container">
-        {measurements.map((m) => (
-          <div
-            key={m.id}
-            className="card"
-            style={{
-              borderTop: `5px solid ${getCardColor(m.value, m.threshold)}`,
-            }}
-          >
-            <h2>{m.parameter}</h2>
-            <div className="value-row">
-              <span className="value">{m.value}</span>
-              <span className="unit">{m.unit}</span>
-            </div>
-            <p className="threshold">
-              Порог: {m.threshold} {m.unit}
-            </p>
-            <p className="time">
-              Обновлено: {new Date(m.timestamp).toLocaleTimeString()}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Nav />
+        <main className="main">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+            <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route
+              path="/admin"
+              element={<ProtectedRoute adminOnly><AdminSources /></ProtectedRoute>}
+            />
+          </Routes>
+        </main>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
-
-export default App;

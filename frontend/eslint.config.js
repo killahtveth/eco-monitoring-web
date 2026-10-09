@@ -27,6 +27,7 @@ export default [
       "react/jsx-uses-react": "off",
       // Отключаем проверку target="_blank" (или исправь код, добавив rel="noreferrer")
       "react/jsx-no-target-blank": "off",
+      "react/prop-types": "off", 
     },
   },
 ];
