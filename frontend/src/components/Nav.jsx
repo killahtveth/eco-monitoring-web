@@ -20,7 +20,12 @@ export default function Nav() {
       {user?.role === "ADMIN" && <Link to="/admin">Источники</Link>}
       <span style={{ marginLeft: "auto" }}>
         {user ? (
-          <button onClick={() => { logout(); navigate("/login"); }}>
+          <button
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
+          >
             Выйти ({user.email})
           </button>
         ) : (
