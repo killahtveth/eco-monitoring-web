@@ -42,7 +42,7 @@
     "pre-commit": "cd frontend && npx lint-staged"
   },
   "lint-staged": {
-    "frontend/**/*.{js,jsx,css,json,md}": ["prettier --write"]
+    "src/**/*.{js,jsx,css,json,md}": ["prettier --write"]
   }
 }
 
