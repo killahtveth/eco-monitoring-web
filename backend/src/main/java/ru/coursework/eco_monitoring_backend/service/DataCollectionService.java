@@ -29,6 +29,7 @@ public class DataCollectionService {
     private final MeasurementRepository measurements;
     private final List<Collector> collectors;
     private final DataValidationService validator;
+    private final NotificationService notificationService;   // ← НОВОЕ поле
 
     @Scheduled(cron = "${app.collector.cron:0 */5 * * * *}")
     public void scheduledCollect() {
@@ -73,17 +74,19 @@ public class DataCollectionService {
             if (loc == null) loc = locations.save(Location.builder().name(r.locationName()).build());
 
             Parameter param = parameters.findByCode(r.parameterCode()).orElse(null);
-            if (param == null) { log.warn("Unknown parameter code {}", r.parameterCode()); continue; }
+            if (param == null) { log.warn("Unknown parameter {}", r.parameterCode()); continue; }
 
             if (!validator.isValid(param, r.value())) {
                 log.warn("Dropped invalid {}={}", param.getCode(), r.value());
                 continue;
             }
 
-            measurements.save(Measurement.builder()
+            Measurement savedEntity = measurements.save(Measurement.builder()
                 .location(loc).parameter(param)
                 .value(r.value()).threshold(param.getDefaultThreshold())
                 .timestamp(r.ts()).source(ds.getName()).valid(true).build());
+
+            notificationService.check(savedEntity);   // ← вот та самая «дополнительная строка»
             saved++;
         }
         return saved;
