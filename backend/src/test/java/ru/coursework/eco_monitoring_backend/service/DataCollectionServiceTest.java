@@ -14,12 +14,14 @@ import ru.coursework.eco_monitoring_backend.repository.LocationRepository;
 import ru.coursework.eco_monitoring_backend.repository.MeasurementRepository;
 import ru.coursework.eco_monitoring_backend.repository.ParameterRepository;
 import ru.coursework.eco_monitoring_backend.service.collector.OpenMeteoCollector;
+import ru.coursework.eco_monitoring_backend.service.NotificationService;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
@@ -34,6 +36,7 @@ class DataCollectionServiceTest {
     private ParameterRepository parameters;
     private MockRestServiceServer server;
     private DataSource ds;
+    private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
@@ -41,6 +44,7 @@ class DataCollectionServiceTest {
         locations = mock(LocationRepository.class);
         parameters = mock(ParameterRepository.class);
         measurements = mock(MeasurementRepository.class);
+        notificationService = mock(NotificationService.class);
 
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
@@ -49,7 +53,7 @@ class DataCollectionServiceTest {
         // ← ГЛАВНОЕ ИЗМЕНЕНИЕ: добавлен DataValidationService
         service = new DataCollectionService(
             dataSources, locations, parameters, measurements,
-            List.of(collector), new DataValidationService());
+            List.of(collector), new DataValidationService(), notificationService);
 
         ds = DataSource.builder()
             .id(1L).name("Test").type("OPEN_METEO")
@@ -141,4 +145,17 @@ class DataCollectionServiceTest {
         assertThat(saved).isZero();
         verify(measurements, never()).save(any());
     }
+
+    @Test
+void collectAll_callsNotificationServiceAfterSave() {
+    String json = """
+        {"current_units":{"pm2_5":"μg/m³"},"current":{"time":"2026-11-11T15:00","pm2_5":12.0}}
+        """;
+    server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+        .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+    service.collectAll();
+
+    verify(notificationService, atLeastOnce()).check(any(Measurement.class));
+}
 }
