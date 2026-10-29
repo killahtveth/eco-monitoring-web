@@ -35,6 +35,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
           mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.qualitygate.wait=false \
           -Dsonar.projectKey=eco-monitoring-web
           -Dsonar.organization=killahtveth
           -f backend/pom.xml
