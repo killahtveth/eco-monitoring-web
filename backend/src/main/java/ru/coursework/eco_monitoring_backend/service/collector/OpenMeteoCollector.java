@@ -6,6 +6,8 @@ import org.springframework.web.client.RestClient;
 import ru.coursework.eco_monitoring_backend.model.DataSource;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +61,7 @@ public class OpenMeteoCollector implements Collector {
                     .queryParam("latitude", lat)
                     .queryParam("longitude", lon)
                     .queryParam("current", String.join(",", API_PARAMS))
-                    .queryParam("timezone", "Europe/Moscow")
+                    .queryParam("timezone", "UTC")
                     .build())
                 .retrieve()
                 .body(Map.class);
@@ -75,7 +77,10 @@ public class OpenMeteoCollector implements Collector {
 
         LocalDateTime ts;
         try {
-            ts = LocalDateTime.parse(String.valueOf(current.get("time")));
+            ts = LocalDateTime.parse(String.valueOf(current.get("time")))
+                .atZone(ZoneOffset.UTC)
+                .withZoneSameInstant(ZoneId.systemDefault())
+                .toLocalDateTime();
         } catch (Exception e) {
             ts = LocalDateTime.now();
         }

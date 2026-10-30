@@ -12,8 +12,10 @@ import ru.coursework.eco_monitoring_backend.model.UserSettings;
 import ru.coursework.eco_monitoring_backend.repository.MeasurementRepository;
 import ru.coursework.eco_monitoring_backend.repository.UserRepository;
 import ru.coursework.eco_monitoring_backend.repository.UserSettingsRepository;
+import ru.coursework.eco_monitoring_backend.service.ThresholdService;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -24,31 +26,38 @@ public class DashboardController {
     private final MeasurementRepository repository;
     private final UserRepository users;
     private final UserSettingsRepository settingsRepo;
+    private final ThresholdService thresholdService;
 
     @GetMapping("/current")
     public List<Measurement> getCurrentMeasurements(@AuthenticationPrincipal Object principal) {
         List<Measurement> allLatest = repository.findLatestPerParameterAndLocation();
-        
+
         String email = extractEmail(principal);
         if (email == null || email.equals("anonymousUser")) {
             return allLatest;
         }
 
         User u = users.findByEmail(email).orElse(null);
-        if (u != null) {
-            UserSettings settings = settingsRepo.findByUserId(u.getId()).orElse(null);
-            if (settings != null && settings.getDisplayedParameters() != null && !settings.getDisplayedParameters().isEmpty()) {
-                Set<Long> allowedParamIds = settings.getDisplayedParameters().stream()
-                        .map(Parameter::getId)
-                        .collect(Collectors.toSet());
-                
-                return allLatest.stream()
-                        .filter(m -> allowedParamIds.contains(m.getParameter().getId()))
-                        .toList();
-            }
+        if (u == null) {
+            return allLatest;
         }
-        
-        return allLatest;
+
+        List<Measurement> visible = allLatest;
+        UserSettings settings = settingsRepo.findByUserId(u.getId()).orElse(null);
+        if (settings != null && settings.getDisplayedParameters() != null && !settings.getDisplayedParameters().isEmpty()) {
+            Set<Long> allowedParamIds = settings.getDisplayedParameters().stream()
+                    .map(Parameter::getId)
+                    .collect(Collectors.toSet());
+
+            visible = allLatest.stream()
+                    .filter(m -> allowedParamIds.contains(m.getParameter().getId()))
+                    .toList();
+        }
+
+        Map<Long, Double> overrides = thresholdService.overrides(u);
+        return visible.stream()
+                .map(m -> thresholdService.withEffectiveThreshold(m, overrides))
+                .toList();
     }
 
     private String extractEmail(Object principal) {

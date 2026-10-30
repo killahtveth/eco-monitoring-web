@@ -7,8 +7,11 @@ import ru.coursework.eco_monitoring_backend.model.Measurement;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface MeasurementRepository extends JpaRepository<Measurement, Long> {
+
+    Optional<Measurement> findFirstByParameterIdOrderByTimestampDesc(Long parameterId);
 
     List<Measurement> findByTimestampBetween(LocalDateTime from, LocalDateTime to);
 

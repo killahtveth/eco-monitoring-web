@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
-
-function toIso(d) {
-  return d.toISOString().slice(0, 19);
-}
+import { toInstantIso, toLocalInput } from "../utils/datetime";
 
 export default function Reports() {
   const [from, setFrom] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 7);
-    return toIso(d);
+    return toLocalInput(d);
   });
-  const [to, setTo] = useState(() => toIso(new Date()));
+  const [to, setTo] = useState(() => toLocalInput(new Date()));
   const [rows, setRows] = useState([]);
   const [sortKey, setSortKey] = useState("parameter");
   const [sortAsc, setSortAsc] = useState(true);
 
+  const query = () =>
+    `from=${encodeURIComponent(toInstantIso(from))}&to=${encodeURIComponent(toInstantIso(to))}`;
+
   const load = () => {
-    api(`/api/reports?from=${from}&to=${to}`)
+    api(`/api/reports?${query()}`)
       .then(setRows)
       .catch(() => setRows([]));
   };
@@ -92,12 +92,9 @@ export default function Reports() {
       <button
         onClick={() => {
           const token = localStorage.getItem("token");
-          fetch(
-            `http://localhost:8080/api/reports/export.xlsx?from=${from}&to=${to}`,
-            {
-              headers: token ? { Authorization: `Bearer ${token}` } : {},
-            },
-          )
+          fetch(`http://localhost:8080/api/reports/export.xlsx?${query()}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
             .then((r) => r.blob())
             .then((blob) => {
               const url = URL.createObjectURL(blob);

@@ -20,8 +20,17 @@ function renderApp() {
   );
 }
 
+function mockFetch(dashboardData) {
+  window.fetch.mockImplementation((url) => {
+    const body = String(url).includes("/api/notifications")
+      ? []
+      : dashboardData;
+    return Promise.resolve({ ok: true, json: async () => body });
+  });
+}
+
 test("отображает заголовок и подзаголовок", () => {
-  window.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+  mockFetch([]);
   renderApp();
   expect(
     screen.getByRole("heading", { name: /Экологический мониторинг/i }),
@@ -40,7 +49,7 @@ test("загружает и отображает карточки", async () => 
       timestamp: new Date().toISOString(),
     },
   ];
-  window.fetch.mockResolvedValueOnce({ ok: true, json: async () => data });
+  mockFetch(data);
   renderApp();
 
   await waitFor(() => {

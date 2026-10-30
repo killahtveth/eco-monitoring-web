@@ -51,10 +51,29 @@ export default function Profile() {
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const parseThreshold = (value) => {
+    if (value === "" || value == null) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : NaN;
+  };
+
   const saveThreshold = async (parameterId, value) => {
-    await api("/api/thresholds", {
+    const parsed = parseThreshold(value);
+    if (Number.isNaN(parsed)) return;
+
+    const result = await api("/api/thresholds", {
       method: "PUT",
-      body: JSON.stringify({ parameterId, threshold: Number(value) }),
+      body: JSON.stringify({ parameterId, threshold: parsed }),
+    });
+
+    setThresholds((prev) => {
+      const next = { ...prev };
+      if (result.threshold == null) {
+        delete next[parameterId];
+      } else {
+        next[parameterId] = result.threshold;
+      }
+      return next;
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -147,40 +166,57 @@ export default function Profile() {
       {/* Блок 2: Пороги уведомлений */}
       <div className="card" style={{ padding: 20 }}>
         <h2>Пороги уведомлений</h2>
+        <p style={{ color: "#666", maxWidth: 720 }}>
+          Если порог не указан, используется нормативное значение из справочника
+          (колонка «Норматив»). Чтобы сбросить свой порог и вернуться к
+          нормативу, очистите поле и нажмите «Сохранить».
+        </p>
         <table style={{ width: "100%", textAlign: "left" }}>
           <thead>
             <tr>
               <th>Показатель</th>
               <th>Ед. изм.</th>
-              <th>Порог</th>
+              <th>Норматив</th>
+              <th>Ваш порог</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {parameters.map((p) => (
-              <tr key={p.id}>
-                <td>{p.code}</td>
-                <td>{p.unit}</td>
-                <td>
-                  <input
-                    type="number"
-                    value={thresholds[p.id] ?? ""}
-                    onChange={(e) =>
-                      setThresholds({ ...thresholds, [p.id]: e.target.value })
-                    }
-                    style={{ width: 80, padding: 4 }}
-                  />
-                </td>
-                <td>
-                  <button
-                    onClick={() => saveThreshold(p.id, thresholds[p.id])}
-                    style={{ padding: "4px 8px" }}
-                  >
-                    Сохранить
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {parameters.map((p) => {
+              const value = thresholds[p.id] ?? "";
+              const invalid =
+                value !== "" && value != null && !(Number(value) > 0);
+
+              return (
+                <tr key={p.id}>
+                  <td>{p.code}</td>
+                  <td>{p.unit}</td>
+                  <td>
+                    {p.defaultThreshold} {p.unit}
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      placeholder={String(p.defaultThreshold)}
+                      value={value}
+                      onChange={(e) =>
+                        setThresholds({ ...thresholds, [p.id]: e.target.value })
+                      }
+                      style={{ width: 80, padding: 4 }}
+                    />
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => saveThreshold(p.id, thresholds[p.id])}
+                      disabled={invalid}
+                      style={{ padding: "4px 8px" }}
+                    >
+                      Сохранить
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
