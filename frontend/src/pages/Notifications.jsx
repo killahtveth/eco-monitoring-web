@@ -1,24 +1,7 @@
-import { useEffect, useState } from "react";
-import { api } from "../api/client";
+import { useNotifications } from "../context/NotificationsContext";
 
 export default function Notifications() {
-  const [items, setItems] = useState([]);
-
-  const load = () =>
-    api("/api/notifications")
-      .then(setItems)
-      .catch(() => {});
-
-  useEffect(() => {
-    load();
-    const timer = setInterval(load, 60_000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const markRead = async (id) => {
-    await api(`/api/notifications/${id}/read`, { method: "POST" });
-    load();
-  };
+  const { items, markRead } = useNotifications();
 
   return (
     <div>
@@ -31,6 +14,7 @@ export default function Notifications() {
               <th>Показатель</th>
               <th>Значение</th>
               <th>Порог</th>
+              <th>Статус</th>
               <th>Время</th>
               <th />
             </tr>
@@ -45,10 +29,22 @@ export default function Notifications() {
                 <td>
                   {n.threshold} {n.unit}
                 </td>
+                <td>
+                  <span
+                    style={{
+                      color: n.read ? "#888" : "#d4380d",
+                      fontWeight: n.read ? 400 : 700,
+                    }}
+                  >
+                    {n.read ? "Прочитано" : "Новое"}
+                  </span>
+                </td>
                 <td>{new Date(n.createdAt).toLocaleString()}</td>
                 <td>
                   {!n.read && (
-                    <button onClick={() => markRead(n.id)}>Прочитано</button>
+                    <button onClick={() => markRead(n.id)}>
+                      Отметить прочитанным
+                    </button>
                   )}
                 </td>
               </tr>

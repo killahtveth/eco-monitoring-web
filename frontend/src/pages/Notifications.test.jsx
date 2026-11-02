@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { test, expect, vi, beforeEach } from "vitest";
+import { AuthProvider } from "../context/AuthContext";
+import { NotificationsProvider } from "../context/NotificationsContext";
 import Notifications from "./Notifications";
 
 beforeEach(() => {
@@ -9,7 +11,19 @@ beforeEach(() => {
   localStorage.setItem("user", JSON.stringify({ email: "u@e", role: "USER" }));
 });
 
-test("показывает уведомления из API", async () => {
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <AuthProvider>
+        <NotificationsProvider>
+          <Notifications />
+        </NotificationsProvider>
+      </AuthProvider>
+    </MemoryRouter>,
+  );
+}
+
+test("показывает уведомления из API со статусом «Новое»", async () => {
   window.fetch.mockResolvedValueOnce({
     ok: true,
     json: async () => [
@@ -17,7 +31,7 @@ test("показывает уведомления из API", async () => {
         id: 1,
         parameter: "PM2.5",
         unit: "μg/m³",
-        value: 99.0, // <-- Изменили с 20.0 на 99.0, чтобы избежать совпадения с "2026" в дате
+        value: 99.0,
         threshold: 15.0,
         createdAt: new Date().toISOString(),
         read: false,
@@ -25,25 +39,42 @@ test("показывает уведомления из API", async () => {
     ],
   });
 
-  render(
-    <MemoryRouter>
-      <Notifications />
-    </MemoryRouter>,
-  );
+  renderPage();
 
   await waitFor(() => {
     expect(screen.getByText("PM2.5")).toBeInTheDocument();
-    expect(screen.getByText(/99/)).toBeInTheDocument(); // <-- Теперь ищем уникальное значение 99
+    expect(screen.getByText(/99/)).toBeInTheDocument();
+    expect(screen.getByText("Новое")).toBeInTheDocument();
+  });
+});
+
+test("показывает прочитанные уведомления", async () => {
+  window.fetch.mockResolvedValueOnce({
+    ok: true,
+    json: async () => [
+      {
+        id: 2,
+        parameter: "PM10",
+        unit: "μg/m³",
+        value: 45.0,
+        threshold: 8.0,
+        createdAt: new Date().toISOString(),
+        read: true,
+      },
+    ],
+  });
+
+  renderPage();
+
+  await waitFor(() => {
+    expect(screen.getByText("PM10")).toBeInTheDocument();
+    expect(screen.getByText("Прочитано")).toBeInTheDocument();
   });
 });
 
 test("показывает пустое состояние", async () => {
   window.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
-  render(
-    <MemoryRouter>
-      <Notifications />
-    </MemoryRouter>,
-  );
+  renderPage();
   await waitFor(() => {
     expect(screen.getByText(/Нет уведомлений/)).toBeInTheDocument();
   });

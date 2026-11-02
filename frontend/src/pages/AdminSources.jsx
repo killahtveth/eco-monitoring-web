@@ -46,7 +46,11 @@ export default function AdminSources() {
 
   const run = async (id) => {
     const r = await api(`/api/admin/sources/${id}/run`, { method: "POST" });
-    alert(`Сохранено измерений: ${r.saved}`);
+    alert(
+      r.saved === 0
+        ? "Новых данных нет — дубликаты пропущены"
+        : `Сохранено измерений: ${r.saved}`,
+    );
     load();
   };
 

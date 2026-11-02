@@ -81,6 +81,12 @@ public class DataCollectionService {
                 continue;
             }
 
+            if (measurements.existsByLocationIdAndParameterIdAndTimestamp(
+                    loc.getId(), param.getId(), r.ts())) {
+                log.info("Skipped duplicate {} at {}", param.getCode(), r.ts());
+                continue;
+            }
+
             Measurement savedEntity = measurements.save(Measurement.builder()
                 .location(loc).parameter(param)
                 .value(r.value()).threshold(param.getDefaultThreshold())

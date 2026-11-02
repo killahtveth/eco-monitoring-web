@@ -1,34 +1,11 @@
-import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import { useNotifications } from "../context/NotificationsContext";
 
 export default function Nav() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [unread, setUnread] = useState(0);
-
-  useEffect(() => {
-    if (!user) {
-      setUnread(0);
-      return;
-    }
-
-    let active = true;
-    const load = () =>
-      api("/api/notifications")
-        .then((rows) => {
-          if (active) setUnread(rows.filter((n) => !n.read).length);
-        })
-        .catch(() => {});
-
-    load();
-    const timer = setInterval(load, 60_000);
-    return () => {
-      active = false;
-      clearInterval(timer);
-    };
-  }, [user]);
+  const { unread } = useNotifications();
 
   return (
     <nav className="nav">
