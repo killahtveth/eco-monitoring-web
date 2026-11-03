@@ -94,7 +94,11 @@ class DataCollectionServiceTest {
 
         assertThat(saved).isEqualTo(6);
         verify(measurements, times(6)).save(any(Measurement.class));
-        verify(dataSources).save(argThat(d -> "ACTIVE".equals(d.getStatus())));
+        verify(dataSources).save(argThat(d ->
+            "ACTIVE".equals(d.getStatus()) && d.getLastFetchAt() != null));
+        verify(locations, atLeastOnce()).save(argThat(l ->
+            l.getLatitude() != null && l.getLatitude() == 54.3
+                && l.getLongitude() != null && l.getLongitude() == 48.4));
     }
 
     @Test
@@ -107,7 +111,55 @@ class DataCollectionServiceTest {
         assertThat(saved).isZero();
         verify(measurements, never()).save(any());
         verify(dataSources).save(argThat(d ->
-            "ERROR".equals(d.getStatus()) && d.getLastError() != null));
+            "ERROR".equals(d.getStatus()) && d.getLastError() != null
+                && d.getLastFetchAt() != null));
+    }
+
+    @Test
+    void collectAndTrack_setsFetchDateForManualRun() {
+        String json = """
+            {"current_units":{"pm2_5":"ug/m3"},"current":{"time":"2026-11-11T15:00","pm2_5":12.0}}
+            """;
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+            .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        int saved = service.collectAndTrack(ds);
+
+        assertThat(saved).isEqualTo(1);
+        assertThat(ds.getLastFetchAt()).isNotNull();
+        assertThat(ds.getStatus()).isEqualTo("ACTIVE");
+        verify(dataSources).save(argThat(d -> d.getLastFetchAt() != null));
+    }
+
+    @Test
+    void collectAndTrack_setsFetchDateEvenWhenApiFails() {
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+            .andRespond(withServerError());
+
+        int saved = service.collectAndTrack(ds);
+
+        assertThat(saved).isZero();
+        assertThat(ds.getStatus()).isEqualTo("ERROR");
+        assertThat(ds.getLastError()).isNotBlank();
+        assertThat(ds.getLastFetchAt()).isNotNull();
+        verify(dataSources).save(argThat(d -> d.getLastFetchAt() != null));
+    }
+
+    @Test
+    void collectAll_fillsCoordinatesOfExistingLocation() {
+        Location existing = Location.builder().id(1L).name("Test").build();
+        when(locations.findByName("Test")).thenReturn(existing);
+
+        String json = """
+            {"current_units":{"pm2_5":"ug/m3"},"current":{"time":"2026-11-11T15:00","pm2_5":12.0}}
+            """;
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+            .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        service.collectAll();
+
+        verify(locations).save(argThat(l ->
+            l.getLatitude() == 54.3 && l.getLongitude() == 48.4));
     }
 
     @Test

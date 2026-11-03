@@ -71,6 +71,42 @@ class AdminSourceControllerTest {
     }
 
     @Test
+    void runCollectsSourceAndReturnsStatus() throws Exception {
+        DataSource ds = DataSource.builder().id(1L).name("A").type("OPEN_METEO")
+            .status("ACTIVE").build();
+        when(repo.findById(1L)).thenReturn(Optional.of(ds));
+        when(collector.collectAndTrack(ds)).thenAnswer(inv -> {
+            ds.setLastFetchAt(java.time.LocalDateTime.now());
+            return 3;
+        });
+
+        mockMvc.perform(post("/api/admin/sources/1/run")
+                .with(user("admin@e").roles("ADMIN")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.saved").value(3))
+            .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void runReturnsCollectionError() throws Exception {
+        DataSource ds = DataSource.builder().id(1L).name("A").type("OPEN_METEO")
+            .status("ACTIVE").build();
+        when(repo.findById(1L)).thenReturn(Optional.of(ds));
+        when(collector.collectAndTrack(ds)).thenAnswer(inv -> {
+            ds.setStatus("ERROR");
+            ds.setLastError("Open-Meteo request failed");
+            return 0;
+        });
+
+        mockMvc.perform(post("/api/admin/sources/1/run")
+                .with(user("admin@e").roles("ADMIN")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.saved").value(0))
+            .andExpect(jsonPath("$.status").value("ERROR"))
+            .andExpect(jsonPath("$.lastError").value("Open-Meteo request failed"));
+    }
+
+    @Test
     void nonAdminForbidden() throws Exception {
         // Без addFilters=false сработал бы security, но мы отключили фильтры для unit-теста
         // Поэтому проверим, что @PreAuthorize на методе — а это уже отдельный тест

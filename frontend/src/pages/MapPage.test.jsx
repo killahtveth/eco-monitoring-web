@@ -2,35 +2,44 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { test, expect, vi, beforeEach } from "vitest";
 import MapPage from "./MapPage";
+import Map from "ol/Map";
 
 // Мокаем OpenLayers, чтобы он не пытался рендерить реальный Canvas в jsdom
 vi.mock("ol/Map", () => ({
-  default: vi.fn(() => ({
-    setTarget: vi.fn(),
-    getLayers: vi.fn(() => ({
-      getArray: vi.fn(() => []),
-      removeAt: vi.fn(),
-      add: vi.fn(),
-    })),
-    getOverlays: vi.fn(() => ({
-      getArray: vi.fn(() => [{ setPosition: vi.fn() }]),
-    })),
-    on: vi.fn(),
-  })),
+  default: vi.fn(function () {
+    return {
+      setTarget: vi.fn(),
+      getLayers: vi.fn(() => ({
+        getArray: vi.fn(() => []),
+        removeAt: vi.fn(),
+        add: vi.fn(),
+      })),
+      getOverlays: vi.fn(() => ({
+        getArray: vi.fn(() => [{ setPosition: vi.fn() }]),
+      })),
+      addOverlay: vi.fn(),
+      addLayer: vi.fn(),
+      on: vi.fn(),
+    };
+  }),
 }));
 vi.mock("ol/View", () => ({ default: vi.fn() }));
 vi.mock("ol/layer/Tile", () => ({ default: vi.fn() }));
 vi.mock("ol/source/OSM", () => ({ default: vi.fn() }));
 vi.mock("ol/layer/Vector", () => ({
-  default: vi.fn(() => ({ set: vi.fn() })),
+  default: vi.fn(function () {
+    return { set: vi.fn() };
+  }),
 }));
 vi.mock("ol/source/Vector", () => ({ default: vi.fn() }));
 vi.mock("ol/Feature", () => ({
-  default: vi.fn(() => ({
-    setStyle: vi.fn(),
-    get: vi.fn(),
-    getGeometry: vi.fn(() => ({ getCoordinates: vi.fn() })),
-  })),
+  default: vi.fn(function () {
+    return {
+      setStyle: vi.fn(),
+      get: vi.fn(),
+      getGeometry: vi.fn(() => ({ getCoordinates: vi.fn() })),
+    };
+  }),
 }));
 vi.mock("ol/geom/Point", () => ({ default: vi.fn() }));
 vi.mock("ol/proj", () => ({ fromLonLat: vi.fn((coords) => coords) }));
@@ -41,7 +50,9 @@ vi.mock("ol/style", () => ({
   Stroke: vi.fn(),
 }));
 vi.mock("ol/Overlay", () => ({
-  default: vi.fn(() => ({ setPosition: vi.fn() })),
+  default: vi.fn(function () {
+    return { setPosition: vi.fn() };
+  }),
 }));
 
 beforeEach(() => {
@@ -60,5 +71,5 @@ test("рендерит заголовок и контейнер карты", asy
   );
 
   expect(screen.getByText(/Карта точек мониторинга/i)).toBeInTheDocument();
-  expect(screen.getByText(/OpenLayers/i)).toBeInTheDocument();
+  expect(Map).toHaveBeenCalled();
 });

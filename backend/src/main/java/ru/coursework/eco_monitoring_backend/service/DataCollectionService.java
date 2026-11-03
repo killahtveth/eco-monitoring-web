@@ -44,20 +44,27 @@ public class DataCollectionService {
                 LocalDateTime nextDue = ds.getLastFetchAt().plusMinutes(ds.getIntervalMinutes());
                 if (nextDue.isAfter(LocalDateTime.now())) continue;
             }
-            try {
-                total += collectOne(ds);
-                ds.setStatus("ACTIVE");
-                ds.setLastError(null);
-            } catch (Exception e) {
-                log.error("Collector '{}' failed: {}", ds.getName(), e.getMessage());
-                ds.setStatus("ERROR");
-                ds.setLastError(e.getMessage());
-            } finally {
-                ds.setLastFetchAt(LocalDateTime.now());
-                dataSources.save(ds);
-            }
+            total += collectAndTrack(ds);
         }
         return total;
+    }
+
+    @Transactional
+    public int collectAndTrack(DataSource ds) {
+        try {
+            int saved = collectOne(ds);
+            ds.setStatus("ACTIVE");
+            ds.setLastError(null);
+            return saved;
+        } catch (Exception e) {
+            log.error("Collector '{}' failed: {}", ds.getName(), e.getMessage());
+            ds.setStatus("ERROR");
+            ds.setLastError(e.getMessage());
+            return 0;
+        } finally {
+            ds.setLastFetchAt(LocalDateTime.now());
+            dataSources.save(ds);
+        }
     }
 
     @Transactional
@@ -70,8 +77,7 @@ public class DataCollectionService {
         List<Collector.RawMeasurement> raws = c.fetch(ds);
         int saved = 0;
         for (Collector.RawMeasurement r : raws) {
-            Location loc = locations.findByName(r.locationName());
-            if (loc == null) loc = locations.save(Location.builder().name(r.locationName()).build());
+            Location loc = resolveLocation(ds, r.locationName());
 
             Parameter param = parameters.findByCode(r.parameterCode()).orElse(null);
             if (param == null) { log.warn("Unknown parameter {}", r.parameterCode()); continue; }
@@ -96,5 +102,44 @@ public class DataCollectionService {
             saved++;
         }
         return saved;
+    }
+
+    private Location resolveLocation(DataSource ds, String locationName) {
+        Location loc = locations.findByName(locationName);
+        double[] coords = parseCoordinates(ds.getUrl());
+
+        if (loc == null) {
+            Location.LocationBuilder builder = Location.builder().name(locationName);
+            if (coords != null) {
+                builder.latitude(coords[0]).longitude(coords[1]);
+            }
+            return locations.save(builder.build());
+        }
+
+        if (coords != null && (loc.getLatitude() == null || loc.getLongitude() == null)) {
+            loc.setLatitude(coords[0]);
+            loc.setLongitude(coords[1]);
+            return locations.save(loc);
+        }
+
+        return loc;
+    }
+
+    private static double[] parseCoordinates(String url) {
+        if (url == null || url.isBlank()) {
+            return new double[] {54.3142, 48.4031};
+        }
+        String[] parts = url.split(",");
+        if (parts.length != 2) {
+            return null;
+        }
+        try {
+            return new double[] {
+                Double.parseDouble(parts[0].trim()),
+                Double.parseDouble(parts[1].trim())
+            };
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
