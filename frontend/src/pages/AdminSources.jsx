@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 
-const STATUS_COLORS = {
-  ACTIVE: "#52c41a",
-  ERROR: "#ff4d4f",
-  DISABLED: "#999",
+const STATUS_CLASS = {
+  ACTIVE: "badge badge--success",
+  ERROR: "badge badge--danger",
+  DISABLED: "badge badge--muted",
 };
 
 export default function AdminSources() {
@@ -61,64 +61,83 @@ export default function AdminSources() {
   return (
     <div>
       <h1>Источники данных</h1>
-      <form onSubmit={create} className="toolbar">
-        <input
-          placeholder="Имя"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-        />
-        <input
-          placeholder="URL или lat,lon"
-          value={form.url}
-          onChange={(e) => setForm({ ...form, url: e.target.value })}
-          required
-        />
-        <input
-          type="number"
-          placeholder="Интервал, мин"
-          value={form.intervalMinutes}
-          onChange={(e) =>
-            setForm({ ...form, intervalMinutes: Number(e.target.value) })
-          }
-        />
-        <button type="submit">Добавить</button>
-      </form>
+      <section className="panel">
+        <h2>Новый источник</h2>
+        <form onSubmit={create} className="toolbar toolbar--flush">
+          <input
+            placeholder="Имя"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            required
+          />
+          <input
+            placeholder="URL или lat,lon"
+            value={form.url}
+            onChange={(e) => setForm({ ...form, url: e.target.value })}
+            required
+          />
+          <input
+            type="number"
+            placeholder="Интервал, мин"
+            value={form.intervalMinutes}
+            onChange={(e) =>
+              setForm({ ...form, intervalMinutes: Number(e.target.value) })
+            }
+          />
+          <button type="submit">Добавить</button>
+        </form>
+      </section>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Имя</th>
-            <th>Тип</th>
-            <th>URL</th>
-            <th>Статус</th>
-            <th>Последний сбор</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {sources.map((s) => (
-            <tr key={s.id}>
-              <td>{s.name}</td>
-              <td>{s.type}</td>
-              <td>{s.url}</td>
-              <td style={{ color: STATUS_COLORS[s.status] || "#000" }}>
-                {s.status}
-                {s.lastError && <span title={s.lastError}> ⚠</span>}
-              </td>
-              <td>
-                {s.lastFetchAt ? new Date(s.lastFetchAt).toLocaleString() : "—"}
-              </td>
-              <td>
-                <button onClick={() => toggle(s.id)}>
-                  {s.active ? "Отключить" : "Включить"}
-                </button>
-                <button onClick={() => run(s.id)}>Запустить</button>
-              </td>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Имя</th>
+              <th>Тип</th>
+              <th>URL</th>
+              <th>Статус</th>
+              <th>Последний сбор</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sources.map((s) => (
+              <tr key={s.id}>
+                <td>{s.name}</td>
+                <td>{s.type}</td>
+                <td>{s.url}</td>
+                <td>
+                  <span className={STATUS_CLASS[s.status] || "badge"}>
+                    {s.status}
+                  </span>
+                  {s.lastError && <span title={s.lastError}> ⚠</span>}
+                </td>
+                <td>
+                  {s.lastFetchAt
+                    ? new Date(s.lastFetchAt).toLocaleString()
+                    : "—"}
+                </td>
+                <td>
+                  <div className="row-actions">
+                    <button
+                      className="btn-secondary btn-sm"
+                      onClick={() => toggle(s.id)}
+                    >
+                      {s.active ? "Отключить" : "Включить"}
+                    </button>
+                    <button
+                      className="btn-primary btn-sm"
+                      onClick={() => run(s.id)}
+                    >
+                      Запустить
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

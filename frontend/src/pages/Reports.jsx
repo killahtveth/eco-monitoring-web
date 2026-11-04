@@ -56,40 +56,45 @@ export default function Reports() {
           value={to}
           onChange={(e) => setTo(e.target.value)}
         />
-        <button onClick={load}>Сформировать</button>
+        <button className="btn-primary" onClick={load}>
+          Сформировать
+        </button>
       </div>
 
-      {sorted.length === 0 && <p>Нет данных за период</p>}
+      {sorted.length === 0 && <p className="empty">Нет данных за период</p>}
 
       {sorted.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th onClick={() => onSort("parameter")}>Показатель</th>
-              <th onClick={() => onSort("unit")}>Ед.</th>
-              <th onClick={() => onSort("min")}>Min</th>
-              <th onClick={() => onSort("max")}>Max</th>
-              <th onClick={() => onSort("avg")}>Avg</th>
-              <th onClick={() => onSort("exceeded")}>Превышений</th>
-              <th onClick={() => onSort("count")}>Записей</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((r) => (
-              <tr key={r.parameter}>
-                <td>{r.parameter}</td>
-                <td>{r.unit}</td>
-                <td>{r.min.toFixed(2)}</td>
-                <td>{r.max.toFixed(2)}</td>
-                <td>{r.avg.toFixed(2)}</td>
-                <td>{r.exceeded}</td>
-                <td>{r.count}</td>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th onClick={() => onSort("parameter")}>Показатель</th>
+                <th onClick={() => onSort("unit")}>Ед.</th>
+                <th onClick={() => onSort("min")}>Min</th>
+                <th onClick={() => onSort("max")}>Max</th>
+                <th onClick={() => onSort("avg")}>Avg</th>
+                <th onClick={() => onSort("exceeded")}>Превышений</th>
+                <th onClick={() => onSort("count")}>Записей</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sorted.map((r) => (
+                <tr key={r.parameter}>
+                  <td>{r.parameter}</td>
+                  <td>{r.unit}</td>
+                  <td>{r.min.toFixed(2)}</td>
+                  <td>{r.max.toFixed(2)}</td>
+                  <td>{r.avg.toFixed(2)}</td>
+                  <td>{r.exceeded}</td>
+                  <td>{r.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       <button
+        className="btn-secondary mt"
         onClick={() => {
           const token = localStorage.getItem("token");
           fetch(`http://localhost:8080/api/reports/export.xlsx?${query()}`, {
