@@ -48,6 +48,22 @@ test("загружает и отображает карточки", async () => 
       threshold: 15.0,
       timestamp: new Date().toISOString(),
     },
+    {
+      id: 2,
+      parameter: { code: "NO2", unit: "mg/m³" },
+      location: { name: "Ulyanovsk" },
+      value: 0.4,
+      threshold: 0.2,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 3,
+      parameter: { code: "SO2", unit: "mg/m³" },
+      location: { name: "Dimitrovgrad" },
+      value: 0.1,
+      threshold: 0.5,
+      timestamp: new Date().toISOString(),
+    },
   ];
   mockFetch(data);
   renderApp();
@@ -55,5 +71,11 @@ test("загружает и отображает карточки", async () => 
   await waitFor(() => {
     expect(screen.getByText("PM2.5")).toBeInTheDocument();
     expect(screen.getByText("12.5")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "Ulyanovsk" })).toHaveLength(
+      1,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Dimitrovgrad" }),
+    ).toBeInTheDocument();
   });
 });
