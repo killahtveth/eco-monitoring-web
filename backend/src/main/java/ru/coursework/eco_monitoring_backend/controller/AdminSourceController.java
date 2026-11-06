@@ -7,6 +7,7 @@ import ru.coursework.eco_monitoring_backend.model.DataSource;
 import ru.coursework.eco_monitoring_backend.repository.DataSourceRepository;
 import ru.coursework.eco_monitoring_backend.service.DataCollectionService;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +49,14 @@ public class AdminSourceController {
 
     @PostMapping("/{id}/run")
     public Map<String, Object> run(@PathVariable Long id) {
-        return Map.of("saved", collector.collectOne(repo.findById(id).orElseThrow()));
+        DataSource ds = repo.findById(id).orElseThrow();
+        int saved = collector.collectAndTrack(ds);
+        Map<String, Object> result = new HashMap<>();
+        result.put("saved", saved);
+        result.put("status", ds.getStatus());
+        if (ds.getLastError() != null) {
+            result.put("lastError", ds.getLastError());
+        }
+        return result;
     }
 }

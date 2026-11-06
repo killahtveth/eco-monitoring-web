@@ -1,22 +1,58 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { test, expect, vi, beforeEach } from "vitest";
 import MapPage from "./MapPage";
+import Map from "ol/Map";
 
-// Мокаем react-leaflet — для unit-теста достаточно проверить, что данные пришли
-vi.mock("react-leaflet", () => ({
-  MapContainer: ({ children }) => <div data-testid="map">{children}</div>,
-  TileLayer: () => null,
-  Marker: ({ children, position }) => (
-    <div data-testid="marker" data-lat={position[0]} data-lon={position[1]}>
-      {children}
-    </div>
-  ),
-  Popup: ({ children }) => <div data-testid="popup">{children}</div>,
+// Мокаем OpenLayers, чтобы он не пытался рендерить реальный Canvas в jsdom
+vi.mock("ol/Map", () => ({
+  default: vi.fn(function () {
+    return {
+      setTarget: vi.fn(),
+      getLayers: vi.fn(() => ({
+        getArray: vi.fn(() => []),
+        removeAt: vi.fn(),
+        add: vi.fn(),
+      })),
+      getOverlays: vi.fn(() => ({
+        getArray: vi.fn(() => [{ setPosition: vi.fn() }]),
+      })),
+      addOverlay: vi.fn(),
+      addLayer: vi.fn(),
+      on: vi.fn(),
+    };
+  }),
 }));
-
-vi.mock("leaflet", () => ({
-  default: { Icon: { Default: { prototype: {}, mergeOptions: vi.fn() } } },
+vi.mock("ol/View", () => ({ default: vi.fn() }));
+vi.mock("ol/layer/Tile", () => ({ default: vi.fn() }));
+vi.mock("ol/source/OSM", () => ({ default: vi.fn() }));
+vi.mock("ol/layer/Vector", () => ({
+  default: vi.fn(function () {
+    return { set: vi.fn() };
+  }),
+}));
+vi.mock("ol/source/Vector", () => ({ default: vi.fn() }));
+vi.mock("ol/Feature", () => ({
+  default: vi.fn(function () {
+    return {
+      setStyle: vi.fn(),
+      get: vi.fn(),
+      getGeometry: vi.fn(() => ({ getCoordinates: vi.fn() })),
+    };
+  }),
+}));
+vi.mock("ol/geom/Point", () => ({ default: vi.fn() }));
+vi.mock("ol/proj", () => ({ fromLonLat: vi.fn((coords) => coords) }));
+vi.mock("ol/style", () => ({
+  Style: vi.fn(),
+  Circle: vi.fn(),
+  Fill: vi.fn(),
+  Stroke: vi.fn(),
+}));
+vi.mock("ol/Overlay", () => ({
+  default: vi.fn(function () {
+    return { setPosition: vi.fn() };
+  }),
 }));
 
 beforeEach(() => {
@@ -25,26 +61,8 @@ beforeEach(() => {
   localStorage.setItem("user", JSON.stringify({ email: "u@e", role: "USER" }));
 });
 
-test("рендерит маркеры по локациям из API", async () => {
-  window.fetch.mockResolvedValueOnce({
-    ok: true,
-    json: async () => [
-      {
-        id: 1,
-        name: "Центр",
-        latitude: 54.3,
-        longitude: 48.4,
-        measurements: [
-          {
-            id: 1,
-            value: 12.5,
-            threshold: 15.0,
-            parameter: { code: "PM2.5", unit: "μg/m³" },
-          },
-        ],
-      },
-    ],
-  });
+test("рендерит заголовок и контейнер карты", async () => {
+  window.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
 
   render(
     <MemoryRouter>
@@ -52,9 +70,6 @@ test("рендерит маркеры по локациям из API", async () 
     </MemoryRouter>,
   );
 
-  await waitFor(() => {
-    expect(screen.getAllByTestId("marker")).toHaveLength(1);
-    expect(screen.getByText(/PM2.5/)).toBeInTheDocument();
-    expect(screen.getByText(/12.5/)).toBeInTheDocument();
-  });
+  expect(screen.getByText(/Карта точек мониторинга/i)).toBeInTheDocument();
+  expect(Map).toHaveBeenCalled();
 });

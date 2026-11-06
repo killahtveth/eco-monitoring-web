@@ -49,4 +49,18 @@ class MeasurementRepositoryTest {
         assertThat(latest).hasSize(1);
         assertThat(latest.get(0).getValue()).isEqualTo(2.0);
     }
+
+    @Test
+    void findLatestPerParameterAndLocation_shouldReturnOneRowForDuplicateTimestamps() {
+        Location l = em.persist(Location.builder().name("L").build());
+        Parameter p = em.persist(Parameter.builder().code("PM10").build());
+        LocalDateTime t = LocalDateTime.now();
+        em.persist(Measurement.builder().location(l).parameter(p).value(1.0).timestamp(t).build());
+        em.persist(Measurement.builder().location(l).parameter(p).value(2.0).timestamp(t).build());
+        em.flush();
+
+        List<Measurement> latest = repository.findLatestPerParameterAndLocation();
+        assertThat(latest).hasSize(1);
+        assertThat(latest.get(0).getValue()).isEqualTo(2.0);
+    }
 }

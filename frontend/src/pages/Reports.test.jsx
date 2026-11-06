@@ -36,6 +36,11 @@ test("рендерит строки отчёта", async () => {
     expect(screen.getByText("10.00")).toBeInTheDocument();
     expect(screen.getByText("30.00")).toBeInTheDocument();
   });
+
+  const url = decodeURIComponent(window.fetch.mock.calls[0][0]);
+  expect(url).toMatch(
+    /\/api\/reports\?from=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z&to=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+  );
 });
 
 test("показывает пустое состояние", async () => {
