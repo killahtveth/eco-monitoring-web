@@ -9,9 +9,9 @@ export default defineConfig({
     globals: true,
     setupFiles: "./src/setupTests.js",
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html', 'lcov'],
-      exclude: ['node_modules/', 'src/setupTests.js'],
+      provider: "v8",
+      reporter: ["text", "html", "lcov"],
+      exclude: ["node_modules/", "src/setupTests.js"],
     },
   },
 });
