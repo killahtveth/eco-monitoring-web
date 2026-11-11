@@ -11,6 +11,8 @@ public class Measurement {
     private Long id;
 
     private String parameter; // Например, "PM2.5" или "CO2"
+
+    @Column(name = "measurement_value")
     private Double value;
     private String unit;      // "мкг/м³" или "ppm"
     private LocalDateTime timestamp;
