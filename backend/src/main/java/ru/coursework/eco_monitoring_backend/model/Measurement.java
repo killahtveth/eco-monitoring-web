@@ -1,39 +1,37 @@
 package ru.coursework.eco_monitoring_backend.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "measurements")
+@Table(name = "measurements",
+       indexes = {
+           @Index(name = "idx_meas_timestamp", columnList = "timestamp"),
+           @Index(name = "idx_meas_loc_ts", columnList = "location_id, timestamp"),
+           @Index(name = "idx_meas_param_ts", columnList = "parameter_id, timestamp")
+       })
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Measurement {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String parameter; // Например, "PM2.5" или "CO2"
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id")
+    private Location location;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parameter_id")
+    private Parameter parameter;
 
     @Column(name = "measurement_value")
     private Double value;
-    private String unit;      // "мкг/м³" или "ppm"
+
     private LocalDateTime timestamp;
-    private Double threshold; // Порог для предупреждения
+    private Double threshold;
 
-    // Пустой конструктор нужен для JPA
-    public Measurement() {}
+    @Builder.Default
+    private Boolean valid = true;
 
-    public Measurement(String parameter, Double value, String unit, LocalDateTime timestamp, Double threshold) {
-        this.parameter = parameter;
-        this.value = value;
-        this.unit = unit;
-        this.timestamp = timestamp;
-        this.threshold = threshold;
-    }
-
-    // Геттеры и сеттеры (можешь сгенерировать через Alt+Insert в IntelliJ или добавить Lombok)
-    public Long getId() { return id; }
-    public String getParameter() { return parameter; }
-    public Double getValue() { return value; }
-    public String getUnit() { return unit; }
-    public LocalDateTime getTimestamp() { return timestamp; }
-    public Double getThreshold() { return threshold; }
+    private String source;
 }
