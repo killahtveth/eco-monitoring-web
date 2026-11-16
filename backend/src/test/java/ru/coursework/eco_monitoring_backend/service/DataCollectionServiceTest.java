@@ -6,9 +6,9 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import ru.coursework.eco_monitoring_backend.model.DataSource;
+import ru.coursework.eco_monitoring_backend.model.Location;
 import ru.coursework.eco_monitoring_backend.model.Measurement;
 import ru.coursework.eco_monitoring_backend.model.Parameter;
-import ru.coursework.eco_monitoring_backend.model.Location;
 import ru.coursework.eco_monitoring_backend.repository.DataSourceRepository;
 import ru.coursework.eco_monitoring_backend.repository.LocationRepository;
 import ru.coursework.eco_monitoring_backend.repository.MeasurementRepository;
@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 class DataCollectionServiceTest {
@@ -45,7 +46,10 @@ class DataCollectionServiceTest {
         server = MockRestServiceServer.bindTo(builder).build();
         OpenMeteoCollector collector = new OpenMeteoCollector(builder);
 
-        service = new DataCollectionService(dataSources, locations, parameters, measurements, List.of(collector));
+        // ← ГЛАВНОЕ ИЗМЕНЕНИЕ: добавлен DataValidationService
+        service = new DataCollectionService(
+            dataSources, locations, parameters, measurements,
+            List.of(collector), new DataValidationService());
 
         ds = DataSource.builder()
             .id(1L).name("Test").type("OPEN_METEO")
@@ -61,7 +65,9 @@ class DataCollectionServiceTest {
         when(parameters.findByCode(any())).thenAnswer(inv -> {
             String code = inv.getArgument(0);
             return Optional.of(Parameter.builder()
-                .id(1L).code(code).unit("μg/m³").defaultThreshold(50.0).build());
+                .id(1L).code(code).unit("μg/m³")
+                .minValid(0.0).maxValid(10000.0)
+                .defaultThreshold(50.0).build());
         });
         when(measurements.save(any())).thenAnswer(inv -> inv.getArgument(0));
     }
@@ -90,13 +96,14 @@ class DataCollectionServiceTest {
     @Test
     void collectAll_marksErrorWhenApiFails() {
         server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
-            .andRespond(org.springframework.test.web.client.response.MockRestResponseCreators.withServerError());
+            .andRespond(withServerError());
 
         int saved = service.collectAll();
 
         assertThat(saved).isZero();
         verify(measurements, never()).save(any());
-        verify(dataSources).save(argThat(d -> "ERROR".equals(d.getStatus()) && d.getLastError() != null));
+        verify(dataSources).save(argThat(d ->
+            "ERROR".equals(d.getStatus()) && d.getLastError() != null));
     }
 
     @Test
@@ -108,5 +115,30 @@ class DataCollectionServiceTest {
 
         assertThat(saved).isZero();
         server.verify();
+    }
+
+    @Test
+    void collectAll_dropsInvalidValues() {
+        // Переопределяем параметр: допустимый диапазон 0..10, значение 100 — невалидно
+        when(parameters.findByCode(any())).thenAnswer(inv -> Optional.of(
+            Parameter.builder()
+                .id(1L).code(inv.getArgument(0)).unit("μg/m³")
+                .minValid(0.0).maxValid(10.0)
+                .defaultThreshold(5.0).build()));
+
+        String json = """
+            {
+              "current_units": {"pm10":"μg/m³"},
+              "current": {"time":"2026-11-11T15:00","pm10":100.0}
+            }
+            """;
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+            .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        int saved = service.collectAll();
+
+        // pm10=100 выходит за maxValid=10 → отбрасывается
+        assertThat(saved).isZero();
+        verify(measurements, never()).save(any());
     }
 }
