@@ -10,6 +10,8 @@ import ru.coursework.eco_monitoring_backend.model.Parameter;
 import ru.coursework.eco_monitoring_backend.repository.LocationRepository;
 import ru.coursework.eco_monitoring_backend.repository.MeasurementRepository;
 import ru.coursework.eco_monitoring_backend.repository.ParameterRepository;
+import ru.coursework.eco_monitoring_backend.model.DataSource;
+import ru.coursework.eco_monitoring_backend.repository.DataSourceRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,7 +23,7 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initDatabase(LocationRepository locations,
                                    ParameterRepository parameters,
-                                   MeasurementRepository measurements) {
+                                   MeasurementRepository measurements, DataSourceRepository dataSources) {
         return args -> {
             if (parameters.count() > 0) return;
 
@@ -73,6 +75,15 @@ public class DataInitializer {
                     .threshold(o3.getDefaultThreshold()).timestamp(now).source("seed").build()
             ));
             System.out.println("Initialized: 2 locations, 6 parameters, 6 measurements");
+
+            dataSources.save(DataSource.builder()
+            .name("Open-Meteo Ulyanovsk")
+            .type("OPEN_METEO")
+            .url("54.3142,48.4031")
+            .intervalMinutes(60)
+            .active(true)
+            .status("ACTIVE")
+            .build());
         };
     }
 }
