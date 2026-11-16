@@ -28,12 +28,18 @@ export default function Register() {
       <h1>Регистрация</h1>
       <form onSubmit={submit}>
         <input
-          type="email" placeholder="Email"
-          value={email} onChange={(e) => setEmail(e.target.value)} required
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
-          type="password" placeholder="Пароль"
-          value={password} onChange={(e) => setPassword(e.target.value)} required
+          type="password"
+          placeholder="Пароль"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <button type="submit">Создать аккаунт</button>
         {error && <p style={{ color: "red" }}>{error}</p>}

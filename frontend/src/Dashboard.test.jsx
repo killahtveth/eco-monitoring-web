@@ -16,7 +16,7 @@ function renderApp() {
       <AuthProvider>
         <App />
       </AuthProvider>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -24,7 +24,7 @@ test("отображает заголовок и подзаголовок", () =
   window.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
   renderApp();
   expect(
-    screen.getByRole("heading", { name: /Экологический мониторинг/i })
+    screen.getByRole("heading", { name: /Экологический мониторинг/i }),
   ).toBeInTheDocument();
   expect(screen.getByText(/Текущие показатели/i)).toBeInTheDocument();
 });
