@@ -28,6 +28,7 @@ public class DataCollectionService {
     private final ParameterRepository parameters;
     private final MeasurementRepository measurements;
     private final List<Collector> collectors;
+    private final DataValidationService validator;
 
     @Scheduled(cron = "${app.collector.cron:0 */5 * * * *}")
     public void scheduledCollect() {
@@ -40,9 +41,7 @@ public class DataCollectionService {
         for (DataSource ds : dataSources.findByActiveTrue()) {
             if (ds.getLastFetchAt() != null && ds.getIntervalMinutes() != null) {
                 LocalDateTime nextDue = ds.getLastFetchAt().plusMinutes(ds.getIntervalMinutes());
-                if (nextDue.isAfter(LocalDateTime.now())) {
-                    continue;
-                }
+                if (nextDue.isAfter(LocalDateTime.now())) continue;
             }
             try {
                 total += collectOne(ds);
@@ -71,23 +70,20 @@ public class DataCollectionService {
         int saved = 0;
         for (Collector.RawMeasurement r : raws) {
             Location loc = locations.findByName(r.locationName());
-            if (loc == null) {
-                loc = locations.save(Location.builder().name(r.locationName()).build());
-            }
+            if (loc == null) loc = locations.save(Location.builder().name(r.locationName()).build());
+
             Parameter param = parameters.findByCode(r.parameterCode()).orElse(null);
-            if (param == null) {
-                log.warn("Unknown parameter code {}, skipping", r.parameterCode());
+            if (param == null) { log.warn("Unknown parameter code {}", r.parameterCode()); continue; }
+
+            if (!validator.isValid(param, r.value())) {
+                log.warn("Dropped invalid {}={}", param.getCode(), r.value());
                 continue;
             }
+
             measurements.save(Measurement.builder()
-                .location(loc)
-                .parameter(param)
-                .value(r.value())
-                .threshold(param.getDefaultThreshold())
-                .timestamp(r.ts())
-                .source(ds.getName())
-                .valid(true)
-                .build());
+                .location(loc).parameter(param)
+                .value(r.value()).threshold(param.getDefaultThreshold())
+                .timestamp(r.ts()).source(ds.getName()).valid(true).build());
             saved++;
         }
         return saved;
