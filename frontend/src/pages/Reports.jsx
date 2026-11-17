@@ -89,6 +89,28 @@ export default function Reports() {
           </tbody>
         </table>
       )}
+      <button
+        onClick={() => {
+          const token = localStorage.getItem("token");
+          fetch(
+            `http://localhost:8080/api/reports/export.xlsx?from=${from}&to=${to}`,
+            {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            },
+          )
+            .then((r) => r.blob())
+            .then((blob) => {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `report-${Date.now()}.xlsx`;
+              a.click();
+              URL.revokeObjectURL(url);
+            });
+        }}
+      >
+        Скачать Excel
+      </button>
     </div>
   );
 }

@@ -49,3 +49,13 @@ test("показывает пустое состояние", async () => {
     expect(screen.getByText(/Нет данных за период/)).toBeInTheDocument();
   });
 });
+
+test("есть кнопка экспорта", async () => {
+  window.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+  render(
+    <MemoryRouter>
+      <Reports />
+    </MemoryRouter>,
+  );
+  expect(screen.getByText(/Скачать Excel/)).toBeInTheDocument();
+});
