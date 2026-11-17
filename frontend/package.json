@@ -37,7 +37,9 @@
     "simple-git-hooks": "^2.14.0",
     "vite": "^8.3.5",
     "vitest": "^5.0.5",
-    "recharts": "^2.15.0"
+    "recharts": "^2.15.0",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0"
   },
   "simple-git-hooks": {
     "pre-commit": "cd frontend && npx lint-staged"
