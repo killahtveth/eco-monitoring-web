@@ -1,8 +1,10 @@
 package ru.coursework.eco_monitoring_backend.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.coursework.eco_monitoring_backend.dto.NotificationDto;
 import ru.coursework.eco_monitoring_backend.model.Notification;
 import ru.coursework.eco_monitoring_backend.model.User;
@@ -38,11 +40,16 @@ public List<NotificationDto> mine(@AuthenticationPrincipal Object principal) {
 }
 
     @PostMapping("/{id}/read")
-    public void markRead(@PathVariable Long id) {
-        notifications.findById(id).ifPresent(n -> {
-            n.setRead(true);
-            notifications.save(n);
-        });
+    public void markRead(@AuthenticationPrincipal Object principal, @PathVariable Long id) {
+        String email = extractEmail(principal);
+        User u = users.findByEmail(email).orElseThrow();
+
+        Notification n = notifications.findById(id)
+            .filter(x -> x.getUser() != null && x.getUser().getId().equals(u.getId()))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Уведомление не найдено"));
+
+        n.setRead(true);
+        notifications.save(n);
     }
 
     private NotificationDto toDto(Notification n) {

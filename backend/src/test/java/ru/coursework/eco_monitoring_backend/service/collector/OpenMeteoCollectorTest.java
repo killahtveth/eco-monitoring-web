@@ -7,6 +7,9 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import ru.coursework.eco_monitoring_backend.model.DataSource;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +64,11 @@ class OpenMeteoCollectorTest {
         assertThat(result).filteredOn(r -> r.parameterCode().equals("PM2.5"))
             .first().extracting(Collector.RawMeasurement::value).isEqualTo(12.1);
         assertThat(result.get(0).locationName()).isEqualTo("Test City");
+        assertThat(result.get(0).ts()).isEqualTo(
+            LocalDateTime.parse("2026-11-11T15:00")
+                .atZone(ZoneOffset.UTC)
+                .withZoneSameInstant(ZoneId.systemDefault())
+                .toLocalDateTime());
         server.verify();
     }
 

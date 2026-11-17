@@ -11,6 +11,8 @@ export default function Notifications() {
 
   useEffect(() => {
     load();
+    const timer = setInterval(load, 60_000);
+    return () => clearInterval(timer);
   }, []);
 
   const markRead = async (id) => {
