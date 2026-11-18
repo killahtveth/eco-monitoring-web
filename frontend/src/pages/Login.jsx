@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import Logo from "../components/Logo";
 
 export default function Login() {
   const { login } = useAuth();
@@ -21,6 +22,10 @@ export default function Login() {
 
   return (
     <div className="auth-page">
+      <div className="auth-brand">
+        <Logo />
+        <span>Эко-мониторинг</span>
+      </div>
       <h1>Вход</h1>
       <form onSubmit={submit}>
         <input
@@ -38,7 +43,7 @@ export default function Login() {
           required
         />
         <button type="submit">Войти</button>
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <p className="text-error">{error}</p>}
       </form>
       <p>
         Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>

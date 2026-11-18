@@ -119,19 +119,18 @@ export default function MapPage() {
         const measurementsHtml =
           feature
             .get("measurements")
-            ?.map(
-              (
-                m,
-              ) => `<div style="margin: 4px 0; padding: 4px; background: ${getColor(m.value, m.threshold)}20; border-radius: 4px;">
-              <span style="font-weight: bold; color: ${getColor(m.value, m.threshold)};">
+            ?.map((m) => {
+              const color = getColor(m.value, m.threshold);
+              return `<div class="popup-measurement" style="background: ${color}20;">
+              <span class="popup-measurement__value" style="color: ${color};">
                 ${m.parameter?.code}: ${m.value} ${m.parameter?.unit}
               </span><br/>
-              <span style="font-size: 11px; color: #666;">Порог: ${m.threshold}</span>
-            </div>`,
-            )
+              <span class="popup-measurement__threshold">Порог: ${m.threshold}</span>
+            </div>`;
+            })
             .join("") || "Нет данных";
 
-        contentEl.innerHTML = `<b style="font-size: 14px; display: block; margin-bottom: 8px;">${feature.get("name")}</b>${measurementsHtml}`;
+        contentEl.innerHTML = `<b class="popup-title">${feature.get("name")}</b>${measurementsHtml}`;
         popupEl.style.display = "block";
       } else {
         if (popupEl) popupEl.style.display = "none";
@@ -143,32 +142,11 @@ export default function MapPage() {
   return (
     <div>
       <h1>Карта точек мониторинга</h1>
-      <div
-        ref={mapContainerRef}
-        style={{
-          height: "70vh",
-          width: "100%",
-          borderRadius: 8,
-          position: "relative",
-        }}
-      />
-      {/* Скрытый элемент для попапа, которым управляет OpenLayers */}
-      <div
-        id="popup"
-        style={{
-          display: "none",
-          position: "absolute",
-          backgroundColor: "white",
-          padding: "12px",
-          borderRadius: "6px",
-          border: "1px solid #ccc",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-          fontFamily: "Arial, sans-serif",
-          minWidth: "160px",
-          zIndex: 1000,
-        }}
-      >
-        <div id="popup-content" />
+      <div className="map-shell">
+        <div ref={mapContainerRef} className="map-container" />
+        <div id="popup" className="popup">
+          <div id="popup-content" />
+        </div>
       </div>
     </div>
   );

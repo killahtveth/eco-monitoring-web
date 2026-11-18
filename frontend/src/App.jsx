@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationsProvider } from "./context/NotificationsContext";
 import Nav from "./components/Nav";
+import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
@@ -80,6 +81,7 @@ export default function App() {
             />
           </Routes>
         </main>
+        <Footer />
       </NotificationsProvider>
     </AuthProvider>
   );

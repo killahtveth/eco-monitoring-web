@@ -26,8 +26,10 @@ export default function Dashboard() {
     <div className="dashboard">
       <h1>Экологический мониторинг</h1>
       <p className="subtitle">Текущие показатели</p>
-      {error && <p style={{ color: "red" }}>Ошибка: {error}</p>}
-      {items.length === 0 && !error && <p>Нет свежих данных…</p>}
+      {error && <p className="text-error">Ошибка: {error}</p>}
+      {items.length === 0 && !error && (
+        <p className="empty">Нет свежих данных…</p>
+      )}
       <div className="cards-container">
         {items.map((m) => (
           <MeasurementCard key={m.id} m={m} />
