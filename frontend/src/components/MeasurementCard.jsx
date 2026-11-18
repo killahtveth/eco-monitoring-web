@@ -2,7 +2,6 @@ import { getColor } from "../utils/color";
 
 export default function MeasurementCard({ m }) {
   const parameter = m.parameter || {};
-  const location = m.location || {};
   return (
     <div
       className="card"
@@ -16,7 +15,6 @@ export default function MeasurementCard({ m }) {
       <p className="threshold">
         Порог: {m.threshold} {parameter.unit}
       </p>
-      <p className="time">{location.name || ""}</p>
       <p className="time">
         Обновлено: {new Date(m.timestamp).toLocaleTimeString()}
       </p>

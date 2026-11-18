@@ -78,26 +78,29 @@ export default function History() {
         </select>
       </div>
 
-      {loading && <p>Загрузка…</p>}
+      {loading && <p className="empty">Загрузка…</p>}
       {!loading && data.length === 0 && locId && paramId && (
-        <p>Нет данных за период</p>
+        <p className="empty">Нет данных за период</p>
       )}
 
       {data.length > 0 && (
-        <ResponsiveContainer width="100%" height={420}>
-          <LineChart data={data}>
-            <CartesianGrid stroke="#eee" />
-            <XAxis dataKey="ts" hide />
-            <YAxis />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#52c41a"
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="chart-card">
+          <ResponsiveContainer width="100%" height={420}>
+            <LineChart data={data}>
+              <CartesianGrid stroke="#e1ece6" />
+              <XAxis dataKey="ts" hide />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#1f8a55"
+                dot={false}
+                strokeWidth={2.5}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       )}
     </div>
   );

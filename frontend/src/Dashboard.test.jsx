@@ -20,8 +20,17 @@ function renderApp() {
   );
 }
 
+function mockFetch(dashboardData) {
+  window.fetch.mockImplementation((url) => {
+    const body = String(url).includes("/api/notifications")
+      ? []
+      : dashboardData;
+    return Promise.resolve({ ok: true, json: async () => body });
+  });
+}
+
 test("отображает заголовок и подзаголовок", () => {
-  window.fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+  mockFetch([]);
   renderApp();
   expect(
     screen.getByRole("heading", { name: /Экологический мониторинг/i }),
@@ -39,12 +48,34 @@ test("загружает и отображает карточки", async () => 
       threshold: 15.0,
       timestamp: new Date().toISOString(),
     },
+    {
+      id: 2,
+      parameter: { code: "NO2", unit: "mg/m³" },
+      location: { name: "Ulyanovsk" },
+      value: 0.4,
+      threshold: 0.2,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 3,
+      parameter: { code: "SO2", unit: "mg/m³" },
+      location: { name: "Dimitrovgrad" },
+      value: 0.1,
+      threshold: 0.5,
+      timestamp: new Date().toISOString(),
+    },
   ];
-  window.fetch.mockResolvedValueOnce({ ok: true, json: async () => data });
+  mockFetch(data);
   renderApp();
 
   await waitFor(() => {
     expect(screen.getByText("PM2.5")).toBeInTheDocument();
     expect(screen.getByText("12.5")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { name: "Ulyanovsk" })).toHaveLength(
+      1,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Dimitrovgrad" }),
+    ).toBeInTheDocument();
   });
 });

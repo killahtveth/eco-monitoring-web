@@ -11,7 +11,15 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
-      exclude: ["node_modules/", "src/setupTests.js"],
+      include: ["src/**/*.{js,jsx}"],
+      exclude: [
+            "node_modules/",
+            "src/setupTests.js",
+            "src/main.jsx",           // точка входа — не тестируется
+            "src/api/client.js",      // сетевой клиент — мокируется
+            "**/*.test.{js,jsx}",     // сами тесты
+            "**/*.config.{js,jsx}",   // конфиги
+        ],
     },
   },
 });
