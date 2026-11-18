@@ -13,6 +13,9 @@ public interface MeasurementRepository extends JpaRepository<Measurement, Long> 
 
     Optional<Measurement> findFirstByParameterIdOrderByTimestampDesc(Long parameterId);
 
+    boolean existsByLocationIdAndParameterIdAndTimestamp(
+        Long locationId, Long parameterId, LocalDateTime timestamp);
+
     List<Measurement> findByTimestampBetween(LocalDateTime from, LocalDateTime to);
 
     List<Measurement> findByLocationIdAndTimestampBetween(Long locationId, LocalDateTime from, LocalDateTime to);
@@ -26,6 +29,10 @@ public interface MeasurementRepository extends JpaRepository<Measurement, Long> 
                                  @Param("from") LocalDateTime from,
                                  @Param("to") LocalDateTime to);
 
-    @Query("SELECT m FROM Measurement m WHERE m.timestamp = (SELECT MAX(x.timestamp) FROM Measurement x WHERE x.parameter.id = m.parameter.id AND x.location.id = m.location.id)")
+    @Query("SELECT m FROM Measurement m WHERE NOT EXISTS (" +
+           "SELECT n FROM Measurement n WHERE n.parameter.id = m.parameter.id " +
+           "AND n.location.id = m.location.id " +
+           "AND (n.timestamp > m.timestamp " +
+           "OR (n.timestamp = m.timestamp AND n.id > m.id)))")
     List<Measurement> findLatestPerParameterAndLocation();
 }

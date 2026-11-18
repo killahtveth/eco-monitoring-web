@@ -147,6 +147,24 @@ class DataCollectionServiceTest {
     }
 
     @Test
+    void collectAll_skipsAlreadyCollectedMeasurements() {
+        when(measurements.existsByLocationIdAndParameterIdAndTimestamp(any(), any(), any()))
+            .thenReturn(true);
+
+        String json = """
+            {"current_units":{"pm2_5":"ug/m3"},"current":{"time":"2026-11-11T15:00","pm2_5":12.0}}
+            """;
+        server.expect(requestTo(org.hamcrest.Matchers.containsString("/v1/air-quality")))
+            .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        int saved = service.collectAll();
+
+        assertThat(saved).isZero();
+        verify(measurements, never()).save(any());
+        verify(notificationService, never()).check(any());
+    }
+
+    @Test
 void collectAll_callsNotificationServiceAfterSave() {
     String json = """
         {"current_units":{"pm2_5":"μg/m³"},"current":{"time":"2026-11-11T15:00","pm2_5":12.0}}
